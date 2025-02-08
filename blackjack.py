@@ -4,6 +4,7 @@ import random
 
 
 class Blackjack :
+    cards=[]
     win=0
     card_values = {1: -1, 2: +1, 3: +1, 4: +1, 5: +1, 6: +1, 7: 0, 8: 0, 9: 0, 10: -1, 11: -1}
     running_count = 0
@@ -74,56 +75,126 @@ class Blackjack :
         # global running_count
         for card in cards:
             self.running_count += self.card_values.get(card, 0)
+    # def update_count(self, cards):
+    #     for card in cards:
+    #         if isinstance(card, list):  # If card is a list, flatten it
+    #             for c in card:
+    #                 self.running_count += self.card_values.get(c, 0)
+    #         else:
+    #             self.running_count += self.card_values.get(card, 0)
 
     def get_true_count(self):
         return round(self.running_count / max(1, self.decks_remaining), 2)
 
+    def checkWin(self,player_cards,dealer_cards):
+        # dealer=dealer_cards[0]
+        if len(dealer_cards)==1:
+            dealer_cards.append(self.cards[0])
+            dealer = sum(dealer_cards)
+            self.update_count([self.cards[0]])
+            self.cards.remove(self.cards[0])
+        else: dealer = sum(dealer_cards)
+        while dealer < 17:
+            dealer += self.cards[0]
+            dealer_cards.append(self.cards[0])
+            self.update_count([self.cards[0]])
+            self.cards.remove(self.cards[0])
+            if 11 in dealer_cards and dealer > 21:
+                dealer_cards.remove(11)
+                dealer -= 10
+        sum_player = sum(player_cards)
+        if sum_player > 21 and 11 in player_cards:
+            sum_player = sum_player - (player_cards.count(11) - 1) * 10
+        if dealer > 21 >= sum_player:
+            return True
+        elif sum_player < 21 and sum_player >= dealer:
+            return True
+        return False
     def runForTest(self):
-        cards=[]
+        # cards=[]
+        self.cards=[]
         for _ in range(8):
             for i in range(2,10):
                 for _ in range(4):
-                    cards.append(i)
+                    self.cards.append(i)
             for _ in range(16):
-                cards.append(10)
+                self.cards.append(10)
             for _ in range(4):
-                cards.append(11)
-        print (len(cards))
-        random.shuffle(cards)
-        while len(cards)>208:
-            player_cards = [cards[i] for i in range(2)]
-            dealer_cards = [cards[2]]
+                self.cards.append(11)
+        print (len(self.cards))
+        random.shuffle(self.cards)
+        #10,10,7,10,10,2,7,10,11,7,3,5,10,7,
+        # self.cards=[11,7,3,10,7,10,10,2,8,10]
+        while len(self.cards)>250:
+            player_cards=[]
+            player_cards = [self.cards[i] for i in range(2)]
+            # print(player_cards)
+            dealer_cards = [self.cards[2]]
+            # print(dealer_cards)
             for i in player_cards:
-                cards.remove(i)
-            cards.remove(dealer_cards[0])
-            self.update_count(player_cards+[dealer_cards])
-            best_move = self.get_best_move(player_cards, dealer_cards)
-            while best_move == "Hit":
-                new_card = cards[0]
-                cards.remove(new_card)
-                player_cards.append(new_card)
-                self.update_count([new_card])
-                best_move=self.get_best_move(player_cards,dealer_cards)
-            if best_move == "Stand":
-                dealer_cards.append(cards[0])
-                dealer = sum(dealer_cards)
-                cards.remove(cards[0])
-                while dealer<=17:
-                    dealer+=cards[0]
-                    dealer_cards.append(cards[0])
-                    cards.remove(cards[0])
-                    if 11 in dealer_cards and dealer>21:
-                        dealer_cards.remove(11)
-                        dealer-=10
-                sum_player = sum(player_cards)
-                if sum_player>21 and 11 in player_cards:
-                    sum_player = sum_player-(player_cards.count(11)-1)*10
-                if dealer>21:
-                    self.win+=1
-                elif sum_player<21 and sum_player>dealer:
-                    self.win+=1
-            if best_move == "Bust":
-                self.win_=1
+                self.cards.remove(i)
+            self.cards.remove(dealer_cards[0])
+            self.update_count(player_cards+dealer_cards)
+            best_move = self.get_best_move(player_cards, *dealer_cards)
+            self.bestMoveOperator(player_cards,dealer_cards,best_move)
+        print(self.win)
+
+    def bestMoveOperator(self,player_cards,dealer_cards,best_move):
+        while best_move == "Hit":
+            new_card = self.cards[0]
+            self.cards.remove(new_card)
+            player_cards.append(new_card)
+            self.update_count([new_card])
+            best_move = self.get_best_move(player_cards, *dealer_cards)
+        if best_move == "Stand":
+            if self.checkWin(player_cards, dealer_cards):
+                self.win += 1
+            else:
+                self.win -= 1
+            # dealer_cards.append(cards[0])
+            # dealer = sum(dealer_cards)
+            # cards.remove(cards[0])
+            # while dealer<=17:
+            #     dealer+=cards[0]
+            #     dealer_cards.append(cards[0])
+            #     cards.remove(cards[0])
+            #     if 11 in dealer_cards and dealer>21:
+            #         dealer_cards.remove(11)
+            #         dealer-=10
+            # sum_player = sum(player_cards)
+            # if sum_player>21 and 11 in player_cards:
+            #     sum_player = sum_player-(player_cards.count(11)-1)*10
+            # if dealer>21:
+            #     self.win+=1
+            # elif sum_player<21 and sum_player>dealer:
+            #     self.win+=1
+        if best_move == "Bust":
+            self.win -= 1
+        if best_move == "Double":
+            player_cards.append(self.cards[0])
+            self.update_count([self.cards[0]])
+            self.cards.remove(self.cards[0])
+            if self.checkWin(player_cards, dealer_cards):
+                self.win += 1
+            else:
+                self.win -= 1
+        if best_move == "Split":
+            player_cards1=[player_cards[0]]
+            player_cards2 = [player_cards[1]]
+            player_cards1.append(self.cards[0])
+            self.update_count([self.cards[0]])
+            self.cards.remove(self.cards[0])
+            print(dealer_cards)
+            dealer_cards1=dealer_cards
+            best_move1 = self.get_best_move(player_cards1,*dealer_cards)
+            self.bestMoveOperator(player_cards1,dealer_cards,best_move1)
+            player_cards2.append(self.cards[0])
+            self.update_count([self.cards[0]])
+            self.cards.remove(self.cards[0])
+            print(dealer_cards)
+            best_move2 = self.get_best_move(player_cards2,dealer_cards1[0])
+            self.bestMoveOperator(player_cards2,dealer_cards1,best_move2)
+
 
     def runWithInput(self):
 
