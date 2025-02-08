@@ -1,4 +1,4 @@
-from tabulate import tabulate
+#from tabulate import tabulate
 
 # Blackjack strategy chart (same as before)
 bj_strategy = {
